@@ -7,5 +7,6 @@ import java.util.concurrent.TimeUnit
 fun convertMillisToMMSS(millis: Long): String {
     val minutes = TimeUnit.MILLISECONDS.toMinutes(millis)
     val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
-    return String.format("%02d:%02d", minutes, seconds)
+    val hundredths = (millis % 1000) / 10
+    return String.format("%02d:%02d,%02d", minutes, seconds, hundredths)
 }

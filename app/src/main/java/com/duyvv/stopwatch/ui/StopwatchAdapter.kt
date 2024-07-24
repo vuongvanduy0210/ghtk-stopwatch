@@ -10,13 +10,11 @@ import com.duyvv.stopwatch.R
 import com.duyvv.stopwatch.databinding.ItemStopwatchBinding
 import com.duyvv.stopwatch.domain.Stopwatch
 import com.duyvv.stopwatch.utils.convertMillisToMMSS
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @SuppressLint("NotifyDataSetChanged")
-class StopwatchAdapter : RecyclerView.Adapter<StopwatchAdapter.StopwatchViewHolder>() {
+class StopwatchAdapter(
+    private val stopwatchListener: StopwatchListener
+) : RecyclerView.Adapter<StopwatchAdapter.StopwatchViewHolder>() {
 
     inner class StopwatchViewHolder(
         val binding: ItemStopwatchBinding
@@ -54,7 +52,7 @@ class StopwatchAdapter : RecyclerView.Adapter<StopwatchAdapter.StopwatchViewHold
         }
     }
 
-    private val items = mutableListOf<Stopwatch>()
+    val items = mutableListOf<Stopwatch>()
 
     fun setItems(items: List<Stopwatch>) {
         this.items.clear()
@@ -65,6 +63,7 @@ class StopwatchAdapter : RecyclerView.Adapter<StopwatchAdapter.StopwatchViewHold
     fun addItem(stopwatch: Stopwatch) {
         items.add(stopwatch)
         notifyItemInserted(items.size - 1)
+        notifyItemRangeChanged(items.size - 1, 1)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StopwatchViewHolder {
@@ -83,15 +82,15 @@ class StopwatchAdapter : RecyclerView.Adapter<StopwatchAdapter.StopwatchViewHold
         holder.binding.apply {
             btnStart.setOnClickListener {
                 if (!stopwatch.isRunning) {
-                    startStop(stopwatch, this)
+                    stopwatchListener.onStart(stopwatch, position)
                 } else {
-                    stop(stopwatch)
+                    stopwatchListener.onStop(stopwatch, position)
                 }
                 holder.updateButtonText(stopwatch.isRunning)
             }
 
             btnReset.setOnClickListener {
-                reset(stopwatch, this)
+                stopwatchListener.onReset(stopwatch, position)
             }
         }
     }
@@ -101,90 +100,33 @@ class StopwatchAdapter : RecyclerView.Adapter<StopwatchAdapter.StopwatchViewHold
         position: Int,
         payloads: MutableList<Any>
     ) {
-        super.onBindViewHolder(holder, position, payloads)
         val stopwatch = items[position]
-        if (payloads.isEmpty()) return
+        if (payloads.isEmpty())
+            return super.onBindViewHolder(holder, position, payloads)
 
         when (payloads[0]) {
-            START_ALL_FLAG -> {
+            START_FLAG, RESET_FLAG -> {
                 holder.binding.apply {
-                    if (!stopwatch.isRunning) {
-                        startStop(stopwatch, this)
-                    }
-                    holder.updateButtonText(stopwatch.isRunning)
+                    tvTime.text = convertMillisToMMSS(stopwatch.time)
                 }
             }
-
-            STOP_ALL_FLAG -> {
-                holder.binding.apply {
-                    if (stopwatch.isRunning) {
-                        stop(stopwatch)
-                    }
-                    holder.updateButtonText(stopwatch.isRunning)
-                }
-            }
-
-            RESET_ALL_FLAG -> {
-                holder.binding.apply {
-                    if (!stopwatch.isRunning) {
-                        reset(stopwatch, this)
-                    }
-                    holder.updateButtonText(stopwatch.isRunning)
-                }
-            }
-        }
-    }
-
-
-    private fun startStop(stopwatch: Stopwatch, binding: ItemStopwatchBinding) {
-        stopwatch.isRunning = true
-        stopwatch.job = CoroutineScope(Dispatchers.Main).launch {
-            while (stopwatch.isRunning) {
-                delay(1000)
-                stopwatch.time += 1000
-                binding.tvTime.text = convertMillisToMMSS(stopwatch.time)
-            }
-        }
-    }
-
-    private fun stop(stopwatch: Stopwatch) {
-        stopwatch.isRunning = false
-        stopwatch.job?.cancel()
-        stopwatch.job = null
-    }
-
-    private fun reset(stopwatch: Stopwatch, binding: ItemStopwatchBinding) {
-        if (!stopwatch.isRunning) {
-            stopwatch.time = 0
-            stopwatch.job?.cancel()
-            stopwatch.job = null
-            binding.tvTime.text = convertMillisToMMSS(0)
         }
     }
 
     override fun getItemCount() = items.size
 
-    fun startAll() {
-        for (i in items.indices) {
-            if (!items[i].isRunning) notifyItemChanged(i, START_ALL_FLAG)
-        }
-    }
-
-    fun stopAll() {
-        for (i in items.indices) {
-            if (items[i].isRunning) notifyItemChanged(i, STOP_ALL_FLAG)
-        }
-    }
-
-    fun resetAll() {
-        for (i in items.indices) {
-            if (!items[i].isRunning) notifyItemChanged(i, RESET_ALL_FLAG)
-        }
-    }
-
     companion object {
-        const val START_ALL_FLAG = "START_ALL_FLAG"
-        const val STOP_ALL_FLAG = "STOP_ALL_FLAG"
-        const val RESET_ALL_FLAG = "RESET_ALL_FLAG"
+        const val START_FLAG = "START_FLAG"
+        const val STOP_FLAG = "STOP_FLAG"
+        const val RESET_FLAG = "RESET_FLAG"
     }
+}
+
+interface StopwatchListener {
+
+    fun onStart(stopwatch: Stopwatch, position: Int)
+
+    fun onStop(stopwatch: Stopwatch, position: Int)
+
+    fun onReset(stopwatch: Stopwatch, position: Int)
 }

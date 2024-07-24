@@ -6,19 +6,24 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.duyvv.stopwatch.databinding.FragmentMainBinding
 import com.duyvv.stopwatch.domain.Stopwatch
+import com.duyvv.stopwatch.ui.StopwatchAdapter.Companion.RESET_FLAG
+import com.duyvv.stopwatch.ui.StopwatchAdapter.Companion.START_FLAG
 
 @SuppressLint("NotifyDataSetChanged")
-class MainFragment : Fragment() {
+class MainFragment : Fragment(), StopwatchListener {
 
     private var _binding: FragmentMainBinding? = null
     private val binding get() = _binding!!
 
     private val stopwatchAdapter: StopwatchAdapter by lazy {
-        StopwatchAdapter()
+        StopwatchAdapter(this)
     }
+
+    private val viewModel: MainViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -49,15 +54,27 @@ class MainFragment : Fragment() {
         }
 
         binding.btnStartAll.setOnClickListener {
-            stopwatchAdapter.startAll()
+            stopwatchAdapter.items.forEach {
+                if (!it.isRunning) {
+                    onStart(it, stopwatchAdapter.items.indexOf(it))
+                }
+            }
         }
 
         binding.btnStopAll.setOnClickListener {
-            stopwatchAdapter.stopAll()
+            stopwatchAdapter.items.forEach {
+                if (it.isRunning) {
+                    onStop(it, stopwatchAdapter.items.indexOf(it))
+                }
+            }
         }
 
         binding.btnResetAll.setOnClickListener {
-            stopwatchAdapter.resetAll()
+            stopwatchAdapter.items.forEach {
+                if (!it.isRunning) {
+                    onReset(it, stopwatchAdapter.items.indexOf(it))
+                }
+            }
         }
     }
 
@@ -71,9 +88,26 @@ class MainFragment : Fragment() {
             )
         }
         stopwatchAdapter.setItems(
-            listOf(
-                Stopwatch(0, false)
-            )
+            listOf(Stopwatch(0, false))
         )
+    }
+
+    override fun onStart(stopwatch: Stopwatch, position: Int) {
+        viewModel.startStopwatch(stopwatch) {
+            stopwatchAdapter.notifyItemChanged(position, START_FLAG)
+        }
+        stopwatchAdapter.notifyItemChanged(position)
+    }
+
+    override fun onStop(stopwatch: Stopwatch, position: Int) {
+        viewModel.stopStopwatch(stopwatch)
+        stopwatchAdapter.notifyItemChanged(position)
+    }
+
+    override fun onReset(stopwatch: Stopwatch, position: Int) {
+        viewModel.resetStopwatch(stopwatch) {
+            stopwatchAdapter.notifyItemChanged(position, RESET_FLAG)
+        }
+        stopwatchAdapter.notifyItemChanged(position)
     }
 }
