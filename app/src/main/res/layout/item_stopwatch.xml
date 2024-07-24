@@ -3,7 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:tools="http://schemas.android.com/tools">
+    android:background="@drawable/bg_radius"
+    android:backgroundTint="@color/gray"
+    android:layout_marginTop="15dp">
 
     <LinearLayout
         android:id="@+id/linearLayout"
@@ -38,8 +40,9 @@
             android:id="@+id/btnStart"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:backgroundTint="@color/green"
             android:layout_weight="1"
-            tools:text="Start" />
+            android:text="Start" />
 
         <Button
             android:id="@+id/btnReset"

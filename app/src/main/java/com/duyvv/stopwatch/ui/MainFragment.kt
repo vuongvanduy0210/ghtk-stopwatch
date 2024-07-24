@@ -6,24 +6,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.duyvv.stopwatch.databinding.FragmentMainBinding
 import com.duyvv.stopwatch.domain.Stopwatch
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
-class MainFragment : Fragment(), StopwatchListener {
+@SuppressLint("NotifyDataSetChanged")
+class MainFragment : Fragment() {
 
     private var _binding: FragmentMainBinding? = null
     private val binding get() = _binding!!
 
-    private var job: Job? = null
-
     private val stopwatchAdapter: StopwatchAdapter by lazy {
-        StopwatchAdapter(this)
+        StopwatchAdapter()
     }
 
     override fun onCreateView(
@@ -43,6 +37,28 @@ class MainFragment : Fragment(), StopwatchListener {
 
     private fun setup() {
         setupListStopwatch()
+
+        setupListener()
+    }
+
+    private fun setupListener() {
+        binding.btnAdd.setOnClickListener {
+            stopwatchAdapter.addItem(
+                Stopwatch(0, false)
+            )
+        }
+
+        binding.btnStartAll.setOnClickListener {
+            stopwatchAdapter.startAll()
+        }
+
+        binding.btnStopAll.setOnClickListener {
+            stopwatchAdapter.stopAll()
+        }
+
+        binding.btnResetAll.setOnClickListener {
+            stopwatchAdapter.resetAll()
+        }
     }
 
     private fun setupListStopwatch() {
@@ -59,29 +75,5 @@ class MainFragment : Fragment(), StopwatchListener {
                 Stopwatch(0, false)
             )
         )
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    override fun onClickStart(stopwatch: Stopwatch, position: Int) {
-        stopwatch.isRunning = true
-        job = lifecycleScope.launch {
-            while (true) {
-                delay(1000)
-                stopwatch.time += 1000
-                stopwatchAdapter.notifyDataSetChanged()
-            }
-        }
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    override fun onClickStop(stopwatch: Stopwatch, position: Int) {
-        stopwatch.isRunning = false
-        job?.cancel()
-        stopwatchAdapter.notifyDataSetChanged()
-    }
-
-    override fun onClickReset(stopwatch: Stopwatch, position: Int) {
-        stopwatch.time = 0
-        stopwatchAdapter.notifyDataSetChanged()
     }
 }
